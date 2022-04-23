@@ -3,10 +3,13 @@
 
 # In[ ]:
 
+# UNET with Efficientnet - basecode from  nikhilroxtomar project.
+# Link: https://github.com/nikhilroxtomar/Semantic-Segmentation-Architecture/blob/main/TensorFlow/efficientnetb0_unet.py
+
 
 from tensorflow.keras.layers import Conv2D, BatchNormalization, Activation, MaxPool2D, Conv2DTranspose, Concatenate, Input
 from tensorflow.keras.models import Model
-from tensorflow.keras.applications import EfficientNetB0
+from tensorflow.keras.applications import EfficientNetB7
 import tensorflow as tf
 
 print("TF Version: ", tf.__version__)
