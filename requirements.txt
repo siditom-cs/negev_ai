@@ -1,0 +1,6 @@
+conda install keras tensorflow
+conda install -c menpo opencv
+conda install -c anaconda pillow
+conda install -c anaconda scikit-learn
+conda install -c conda-forge albumentations
+

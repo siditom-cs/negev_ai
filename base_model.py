@@ -53,7 +53,7 @@ def build_effienet_unet(input_shape):
     d4 = decoder_block(d3, s1, 64)                                ## 256
 
     """ Output """
-    outputs = Conv2D(1, 1, padding="same", activation="sigmoid")(d4)
+    outputs = Conv2D(3, 1, padding="same", activation="softmax")(d4)
 
     model = Model(inputs, outputs, name="EfficientNetB7_UNET")
     return model
