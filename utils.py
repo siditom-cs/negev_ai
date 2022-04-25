@@ -27,14 +27,14 @@ from keras.callbacks import  ModelCheckpoint
 from keras.callbacks import Callback
 import tensorflow as tf
 
-train_im_path, train_mask_path = os.path.join(args.train_path,'Orthophoto'), os.path.join(args.train_path,'Ground_truth')
+train_im_path, train_mask_path = os.path.join(args.train_path,'Orthophoto2'), os.path.join(args.train_path,'Ground_truth')
 h, w, batch_size = args.image_hight, args.image_width, args.batch_size
 val_im_path, val_mask_path = os.path.join(args.train_path,'Orthophoto'), os.path.join(args.train_path,'Ground_truth')
 
 
 scce = SparseCategoricalCrossentropy()
 
-
+"""
 
 class DataGenerator(keras.utils.all_utils.Sequence):
     'Generates data for Keras'
@@ -117,7 +117,6 @@ class DataGenerator(keras.utils.all_utils.Sequence):
 # AUGMENTATIONS
 
 
-"""
 AUGMENTATIONS_TRAIN = Compose([
     HorizontalFlip(p=0.5),
     OneOf([
@@ -133,7 +132,6 @@ AUGMENTATIONS_TRAIN = Compose([
     RandomSizedCrop(min_max_height=(128, 256), height=h, width=w,p=0.7),
     ToFloat(max_value=1)
 ],p=1)
-"""
 AUGMENTATIONS_TRAIN = Compose([
     HorizontalFlip(p=0.5),
     OneOf([
@@ -146,7 +144,7 @@ AUGMENTATIONS_TRAIN = Compose([
         GridDistortion(),
         OpticalDistortion(distort_limit=1, shift_limit=0.5),
         ], p=0.1),
-    RandomSizedCrop(min_max_height=(128, 256), height=h, width=w,p=0.7),
+    RandomSizedCrop(min_max_height=(64, 128), height=h, width=w,p=0.7),
     ToFloat(max_value=1)
 ],p=1)
 
@@ -154,7 +152,7 @@ def unittest_generator():
 
     #train_im_path, train_mask_path = os.path.join(args.train_path,'Orthophoto_'+str(args.tile_dim)), os.path.join(args.train_path,'Ground_truth_'+str(args.tile_dim))
     
-    train_im_path, train_mask_path = os.path.join(args.train_path,'Orthophoto'), os.path.join(args.train_path,'Ground_truth')
+    train_im_path, train_mask_path = os.path.join(args.train_path,'Orthophoto2'), os.path.join(args.train_path,'Ground_truth')
     a = DataGenerator(batch_size=32,shuffle=False, augmentations=AUGMENTATIONS_TRAIN, train_im_path=train_im_path,train_mask_path=train_mask_path)
     images,masks = a.__getitem__(0)
     max_images = 64
@@ -169,6 +167,7 @@ def unittest_generator():
         plt.suptitle("Chest X-rays, Red: Pneumothorax.")
     plt.savefig("unittest_generator.png")
 
+"""
 def tile(filename, dir_in, dir_out, d):
     name, ext = os.path.splitext(filename)
     img = Image.open(os.path.join(dir_in, filename))
@@ -262,7 +261,7 @@ def dice_coef_3cat_loss(y_true, y_pred):
     return 1 - dice_coef_3cat(y_true, y_pred)
 
 def bce_dice_loss(y_true, y_pred):
-    return scce(y_true, y_pred) + dice_coef_3cat_loss(y_true, y_pred)
+    return 0.05*scce(y_true, y_pred) + dice_coef_3cat_loss(y_true, y_pred)
 
 def bce_logdice_loss(y_true, y_pred):
     return scce(y_true, y_pred) - K.log(1. - dice_coef_3cat_loss(y_true, y_pred))
@@ -291,4 +290,4 @@ class SnapshotCallbackBuilder:
         cos_out = np.cos(cos_inner) + 1
         return float(self.alpha_zero / 2 * cos_out)
 
-
+#unittest_generator()
