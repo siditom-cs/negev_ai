@@ -204,11 +204,16 @@ def get_iou_vector(A, B):
     metric = 0.0
     for batch in range(batch_size):
         t, p = A[batch], B[batch]
-        true = np.sum(t)
-        pred = np.sum(p)
-        
-
-        metric += np.sum((pred>0) and (true>0) and (pred==true))/np.sum((pred>0 or true>0))
+        t = K.reshape(t,K.shape(p))
+        non_bg_p = K.greater(p,0)
+        non_bg_t = K.greater(t,0)
+        eq_p_t = K.equal(p,t)
+        intersect = K.all(K.stack([non_bg_p, non_bg_t, eq_p_t],axis=0),axis=0)
+        intersect = K.get_value(K.sum(K.cast(intersect, dtype='float32')))
+        union = K.any(K.stack([non_bg_p,non_bg_t],axis=0),axis=0)
+        union = K.get_value(K.sum(K.cast(union, dtype='float32')))
+        #metric += K.sum(K.cast(K.all(K.stack([non_bg_p, non_bg_t, eq_p_t],axis=0),axis=0))#/K.sum(K.greater((non_bg_p+non_bg_t),0))
+        metric += intersect/union
         
     # teake the average over all images in batch
     metric /= batch_size
@@ -218,6 +223,25 @@ def get_iou_vector(A, B):
 def my_iou_metric(label, pred):
     # Tensorflow version
     return tf.numpy_function(get_iou_vector, [label, K.argmax(pred, axis=-1)], tf.float64)
+
+def get_bg_perc_vector(A, B):
+    # Numpy version    
+    batch_size = A.shape[0]
+    metric = 0.0
+    for batch in range(batch_size):
+        t, p = A[batch], B[batch]
+        t = K.reshape(t,K.shape(p))
+        bg_p = K.equal(p,0)
+        metric += K.get_value(K.sum(K.cast(bg_p, dtype='float32')))/(A.shape[1]*A.shape[2])
+        
+    # teake the average over all images in batch
+    metric /= batch_size
+    return metric
+
+
+def my_bg_metric(label, pred):
+    # Tensorflow version
+    return tf.numpy_function(get_bg_perc_vector, [label, K.argmax(pred, axis=-1)], tf.float64)
 
 
 def dice_coef_3cat(y_true, y_pred, smooth=1e-7):
