@@ -247,13 +247,23 @@ AUGMENTATIONS_TRAIN = Compose([
     ToFloat(max_value=1)
 ],p=1)
 
+AUGMENTATIONS_TEST = Compose([
+    OneOf([
+        #CropNonEmptyMaskIfExists(height=256, width=256),
+        CropNonEmptyMaskIfExists(height=128, width=128),
+        #CropNonEmptyMaskIfExists(height=64, width=64),
+        #CropNonEmptyMaskIfExists(height=108, width=108)
+        ], p=1),
+    ToFloat(max_value=1)
+],p=1)
+
 def unittest_generator():
 
     #train_im_path, train_mask_path = os.path.join(args.train_path,'Orthophoto_'+str(args.tile_dim)), os.path.join(args.train_path,'Ground_truth_'+str(args.tile_dim))
     
     train_im_path, train_mask_path = os.path.join(args.train_path,'Orthophoto'), os.path.join(args.train_path,'Ground_truth')
     #train_im_path, train_mask_path = os.path.join(args.train_path,'combined'), os.path.join(args.train_path,'Ground_truth')
-    a = DataGenerator(batch_size=2,shuffle=False, augmentations=AUGMENTATIONS_TRAIN, img_size=128,train_im_path=train_im_path,train_mask_path=train_mask_path)
+    a = DataGenerator(batch_size=2,shuffle=False, augmentations=AUGMENTATIONS_TRAIN, img_size=512,train_im_path=train_im_path,train_mask_path=train_mask_path)
     #a = CombinedDataGenerator(batch_size=2,shuffle=False, augmentations=None, train_im_path=train_im_path,train_mask_path=train_mask_path)
     images,masks = a.__getitem__(0)
     max_images = 64

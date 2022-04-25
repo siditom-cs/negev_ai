@@ -1,7 +1,7 @@
 import os 
 import keras 
 from config import *
-from generators import CombinedDataGenerator, DataGenerator, AUGMENTATIONS_TRAIN
+from generators import CombinedDataGenerator, DataGenerator, AUGMENTATIONS_TRAIN, AUGMENTATIONS_TEST
 from utils import SnapshotCallbackBuilder, bce_dice_loss, dice_coef_3cat_loss, my_iou_metric, my_bg_metric
 from base_model import *
 from albumentations import (
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     
     training_generator = DataGenerator(batch_size=2, augmentations=AUGMENTATIONS_TRAIN,img_size=512, train_im_path=train_im_path,train_mask_path=train_mask_path)
     #training_generator = DataGenerator(batch_size=2, augmentations=None,img_size=128, train_im_path=train_im_path,train_mask_path=train_mask_path)
-    validation_generator = DataGenerator(batch_size=2, augmentations=None,img_size=512, train_im_path=train_im_path,train_mask_path=train_mask_path) #TODO change the paths at runtime.
+    validation_generator = DataGenerator(batch_size=2, augmentations=AUGMENTATIONS_TEST,img_size=512, train_im_path=train_im_path,train_mask_path=train_mask_path) #TODO change the paths at runtime.
     
     snapshot = SnapshotCallbackBuilder(nb_epochs=args.epochs,nb_snapshots=1,init_lr=1e-3)
     
