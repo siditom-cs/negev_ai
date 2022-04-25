@@ -19,7 +19,7 @@ from albumentations import (
     RandomBrightness, RandomContrast, RandomGamma,OneOf,
     ToFloat, ShiftScaleRotate,GridDistortion, ElasticTransform, JpegCompression, HueSaturationValue,
     RGBShift, RandomBrightness, RandomContrast, Blur, MotionBlur, MedianBlur, GaussNoise,CenterCrop,
-    IAAAdditiveGaussianNoise,GaussNoise,OpticalDistortion,RandomSizedCrop
+    IAAAdditiveGaussianNoise,GaussNoise,OpticalDistortion,RandomSizedCrop, CropNonEmptyMaskIfExists
 )
 
 train_im_path, train_mask_path = os.path.join(args.train_path,'Orthophoto'), os.path.join(args.train_path,'Ground_truth')
@@ -68,6 +68,7 @@ class DataGenerator(keras.utils.all_utils.Sequence):
                 augmented = self.augment(image=x, mask=y)
                 im.append(augmented['image'])
                 mask.append(augmented['mask'])
+                #print(augmented['image'].shape)
             return np.array(im)/255, np.array(mask) 
 
     def on_epoch_end(self):
@@ -148,6 +149,7 @@ class CombinedDataGenerator(keras.utils.all_utils.Sequence):
                 augmented = self.augment(image=x, mask=y)
                 im.append(augmented['image'])
                 mask.append(augmented['mask'])
+            print(im)
             return np.array(im)/255, np.array(mask) 
 
     def on_epoch_end(self):
@@ -172,7 +174,6 @@ class CombinedDataGenerator(keras.utils.all_utils.Sequence):
             slope = np.array(Image.open(slope_path))
             tcurv = np.array(Image.open(tcurv_path))
             mask = np.array(Image.open(mask_path))
-
             """
             print("shape(im): ", im.shape)
             print("np.max(im): ", np.max(im))
@@ -236,7 +237,13 @@ AUGMENTATIONS_TRAIN = Compose([
         GridDistortion(),
         OpticalDistortion(distort_limit=1, shift_limit=0.5),
         ], p=0.1),
-    RandomSizedCrop(min_max_height=(128, 256), height=h, width=w,p=0.7),
+    #RandomSizedCrop(min_max_height=(128, 256), height=h, width=w,p=0.7),
+    OneOf([
+        #CropNonEmptyMaskIfExists(height=256, width=256),
+        CropNonEmptyMaskIfExists(height=128, width=128),
+        #CropNonEmptyMaskIfExists(height=64, width=64),
+        #CropNonEmptyMaskIfExists(height=108, width=108)
+        ], p=1),
     ToFloat(max_value=1)
 ],p=1)
 
@@ -245,13 +252,15 @@ def unittest_generator():
     #train_im_path, train_mask_path = os.path.join(args.train_path,'Orthophoto_'+str(args.tile_dim)), os.path.join(args.train_path,'Ground_truth_'+str(args.tile_dim))
     
     train_im_path, train_mask_path = os.path.join(args.train_path,'Orthophoto'), os.path.join(args.train_path,'Ground_truth')
-    #a = CombinedDataGenerator(batch_size=32,shuffle=False, augmentations=AUGMENTATIONS_TRAIN, train_im_path=train_im_path,train_mask_path=train_mask_path)
-    a = CombinedDataGenerator(batch_size=2,shuffle=False, augmentations=None, train_im_path=train_im_path,train_mask_path=train_mask_path)
+    #train_im_path, train_mask_path = os.path.join(args.train_path,'combined'), os.path.join(args.train_path,'Ground_truth')
+    a = DataGenerator(batch_size=2,shuffle=False, augmentations=AUGMENTATIONS_TRAIN, img_size=128,train_im_path=train_im_path,train_mask_path=train_mask_path)
+    #a = CombinedDataGenerator(batch_size=2,shuffle=False, augmentations=None, train_im_path=train_im_path,train_mask_path=train_mask_path)
     images,masks = a.__getitem__(0)
     max_images = 64
     grid_width = 16
     grid_height = int(max_images / grid_width)
     fig, axs = plt.subplots(grid_height, grid_width, figsize=(grid_width, grid_height))
+    """
     for i,(im, mask) in enumerate(zip(images,masks)):
         ax = axs[int(i / grid_width), i % grid_width]
         ax.imshow(im.squeeze(), cmap="bone")
@@ -259,5 +268,19 @@ def unittest_generator():
         ax.axis('off')
         plt.suptitle("Chest X-rays, Red: Pneumothorax.")
     plt.savefig("unittest_generator.png")
+    """
+    i=0
+    while i<64:
+        images,masks = a.__getitem__(0)
+        for (im, mask) in zip(images,masks):
+            ax = axs[int(i / grid_width), i % grid_width]
+            ax.imshow(im.squeeze(), cmap="bone")
+            ax.imshow(mask.squeeze(), alpha=0.5, cmap="Reds")    
+            ax.axis('off')
+            plt.suptitle("Chest X-rays, Red: Pneumothorax.")
+            i += 1
 
+    plt.savefig("unittest_generator.png")
 unittest_generator()
+
+

@@ -83,6 +83,8 @@ def get_iou_vector(A, B):
 
 def my_iou_metric(label, pred):
     # Tensorflow version
+    #print("pred.shape: ", pred.shape)
+    #print("label.shape: ", label.shape)
     return tf.numpy_function(get_iou_vector, [label, K.argmax(pred, axis=-1)], tf.float64)
 
 def get_bg_perc_vector(A, B):
