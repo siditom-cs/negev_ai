@@ -105,6 +105,59 @@ def get_bg_perc_vector(A, B):
 def my_bg_metric(label, pred):
     # Tensorflow version
     return tf.numpy_function(get_bg_perc_vector, [label, K.argmax(pred, axis=-1)], tf.float64)
+def get_c1_perc_vector(A, B):
+    # Numpy version    
+    batch_size = A.shape[0]
+    metric = 0.0
+    for batch in range(batch_size):
+        t, p = A[batch], B[batch]
+        t = K.reshape(t,K.shape(p))
+        bg_p = K.equal(p,1)
+        metric += K.get_value(K.sum(K.cast(bg_p, dtype='float32')))/(A.shape[1]*A.shape[2])
+        
+    # teake the average over all images in batch
+    metric /= batch_size
+    return metric
+
+
+def my_c1_metric(label, pred):
+    # Tensorflow version
+    return tf.numpy_function(get_c1_perc_vector, [label, K.argmax(pred, axis=-1)], tf.float64)
+def get_acc_vector(A, B):
+    # Numpy version    
+    batch_size = A.shape[0]
+    metric = 0.0
+    for batch in range(batch_size):
+        t, p = A[batch], B[batch]
+        t = K.reshape(t,K.shape(p))
+        metric += K.get_value(K.sum(K.cast(t == p, 'float32')))/(A.shape[1]*A.shape[2])
+        
+    # teake the average over all images in batch
+    metric /= batch_size
+    return metric
+
+
+def my_acc_metric(label, pred):
+    # Tensorflow version
+    return tf.numpy_function(get_acc_vector, [label, K.argmax(pred, axis=-1)], tf.float64)
+def get_c2_perc_vector(A, B):
+    # Numpy version    
+    batch_size = A.shape[0]
+    metric = 0.0
+    for batch in range(batch_size):
+        t, p = A[batch], B[batch]
+        t = K.reshape(t,K.shape(p))
+        bg_p = K.equal(p,2)
+        metric += K.get_value(K.sum(K.cast(bg_p, dtype='float32')))/(A.shape[1]*A.shape[2])
+        
+    # teake the average over all images in batch
+    metric /= batch_size
+    return metric
+
+
+def my_c2_metric(label, pred):
+    # Tensorflow version
+    return tf.numpy_function(get_c2_perc_vector, [label, K.argmax(pred, axis=-1)], tf.float64)
 
 
 def dice_coef_3cat(y_true, y_pred, smooth=1e-7):
@@ -125,7 +178,7 @@ def dice_coef_3cat_loss(y_true, y_pred):
     return 1 - dice_coef_3cat(y_true, y_pred)
 
 def bce_dice_loss(y_true, y_pred):
-    return 0.05*scce(y_true, y_pred) + dice_coef_3cat_loss(y_true, y_pred)
+    return 0.01*scce(y_true, y_pred) + dice_coef_3cat_loss(y_true, y_pred)
 
 def bce_logdice_loss(y_true, y_pred):
     return scce(y_true, y_pred) - K.log(1. - dice_coef_3cat_loss(y_true, y_pred))
@@ -140,7 +193,7 @@ class SnapshotCallbackBuilder:
     def get_callbacks(self, model_prefix='Model'):
 
         callback_list = [
-            callbacks.ModelCheckpoint(os.path.join(args.save_path,"model_weights.h5"),monitor='val_my_iou_metric', 
+            callbacks.ModelCheckpoint(os.path.join(args.save_path,"model_weights.h5"),monitor='val_iou_coef_road', 
                                    mode = 'max', save_best_only=True, verbose=1),
             #swa,
             callbacks.LearningRateScheduler(schedule=self._cosine_anneal_schedule)
@@ -154,4 +207,47 @@ class SnapshotCallbackBuilder:
         cos_out = np.cos(cos_inner) + 1
         return float(self.alpha_zero / 2 * cos_out)
 
+def dice_coef(y_true, y_pred):
+    y_true_f = K.flatten(y_true)
+    y_pred = K.cast(y_pred, 'float32')
+    y_pred_f = K.cast(K.greater(K.flatten(y_pred), 0.5), 'float32')
+    intersection = y_true_f * y_pred_f
+    score = 2. * K.sum(intersection) / (K.sum(y_true_f) + K.sum(y_pred_f))
+    return score
+
+def dice_loss(y_true, y_pred):
+    smooth = 1.
+    y_true_f = K.cast(K.flatten(y_true),'float32')
+    y_pred_f = K.flatten(y_pred)
+    intersection = y_true_f * y_pred_f
+    score = (2. * K.sum(intersection) + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
+    return 1. - score
+
+def bce_dice_loss(y_true, y_pred):
+    return binary_crossentropy(y_true, y_pred) + dice_loss(y_true, y_pred)
+
+def bce_logdice_loss(y_true, y_pred):
+    return binary_crossentropy(y_true, y_pred) - K.log(1. - dice_loss(y_true, y_pred))
 #unittest_generator()
+
+
+
+
+def dice_coef_road(y_true, y_pred, smooth = 1):
+    y_true_f = K.flatten(y_true)
+    y_pred_f = K.flatten(y_pred)
+    intersection = K.sum(y_true_f * y_pred_f)
+    return (2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
+
+def soft_dice_loss_road(y_true, y_pred):
+    #print("y_true.shape",y_true.shape)
+    #print("y_pred.shape",y_pred.shape)
+    return 1-dice_coef_road(y_true, y_pred)
+
+def iou_coef_road(y_true, y_pred, smooth=1):
+    intersection = K.sum(K.abs(y_true * y_pred), axis=[1,2,3])
+    union = K.sum(y_true,[1,2,3])+K.sum(y_pred,[1,2,3])-intersection
+    iou = K.mean((intersection + smooth) / (union + smooth), axis=0)
+            
+    return iou
+                    
