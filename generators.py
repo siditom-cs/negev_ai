@@ -149,7 +149,7 @@ class CombinedDataGenerator(keras.utils.all_utils.Sequence):
                 augmented = self.augment(image=x, mask=y)
                 im.append(augmented['image'])
                 mask.append(augmented['mask'])
-            print(im)
+            #print(im)
             return np.array(im)/255, np.array(mask) 
 
     def on_epoch_end(self):
@@ -249,10 +249,8 @@ AUGMENTATIONS_TRAIN = Compose([
 
 AUGMENTATIONS_TEST = Compose([
     OneOf([
-        #CropNonEmptyMaskIfExists(height=256, width=256),
         CropNonEmptyMaskIfExists(height=128, width=128),
-        #CropNonEmptyMaskIfExists(height=64, width=64),
-        #CropNonEmptyMaskIfExists(height=108, width=108)
+        #RandomSizedCrop(min_max_height=(128, 128), height=128, width=128,p=1),
         ], p=1),
     ToFloat(max_value=1)
 ],p=1)

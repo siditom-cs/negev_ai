@@ -140,8 +140,8 @@ class SnapshotCallbackBuilder:
     def get_callbacks(self, model_prefix='Model'):
 
         callback_list = [
-            callbacks.ModelCheckpoint(os.path.join(args.save_path,"model_weights.h5"),monitor='val_loss', 
-                                   mode = 'min', save_best_only=True, verbose=1),
+            callbacks.ModelCheckpoint(os.path.join(args.save_path,"model_weights.h5"),monitor='val_my_iou_metric', 
+                                   mode = 'max', save_best_only=True, verbose=1),
             #swa,
             callbacks.LearningRateScheduler(schedule=self._cosine_anneal_schedule)
         ]
